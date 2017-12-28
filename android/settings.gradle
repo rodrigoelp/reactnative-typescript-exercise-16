@@ -1,0 +1,3 @@
+rootProject.name = 'pouchBooks2'
+
+include ':app'
