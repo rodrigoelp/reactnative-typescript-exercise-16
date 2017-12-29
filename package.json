@@ -7,6 +7,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@types/react": "^16.0.31",
+    "@types/react-native": "^0.51.7",
     "pouchdb-react-native": "^6.3.4",
     "react": "16.0.0",
     "react-native": "0.51.0"
