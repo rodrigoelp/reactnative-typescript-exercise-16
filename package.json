@@ -7,13 +7,22 @@
     "test": "jest"
   },
   "dependencies": {
-    "@types/react": "^16.0.31",
-    "@types/react-native": "^0.51.7",
     "pouchdb-react-native": "^6.3.4",
     "react": "16.0.0",
     "react-native": "0.51.0"
   },
   "devDependencies": {
+    "@types/pouchdb-adapter-fruitdown": "^6.1.2",
+    "@types/pouchdb-adapter-localstorage": "^6.1.2",
+    "@types/pouchdb-adapter-memory": "^6.1.2",
+    "@types/pouchdb-adapter-node-websql": "^6.1.2",
+    "@types/pouchdb-browser": "^6.1.2",
+    "@types/pouchdb-core": "^6.1.10",
+    "@types/pouchdb-http": "^6.1.2",
+    "@types/pouchdb-node": "^6.1.2",
+    "@types/pouchdb-replication": "^6.1.4",
+    "@types/react": "^16.0.31",
+    "@types/react-native": "^0.51.7",
     "babel-jest": "22.0.4",
     "babel-preset-react-native": "4.0.0",
     "jest": "22.0.4",
