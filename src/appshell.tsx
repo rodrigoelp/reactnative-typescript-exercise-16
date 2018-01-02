@@ -1,3 +1,12 @@
+/**
+ * @author Rod Landaeta
+ * @description This component definition, and all the logic written here should not be used as production ready code.
+ * Is meant to be an example and all the code (or most of it) is written down here with the sole purpose to make it easier
+ * to a reader trying to get their head around all the moving components. You need to refactor this code to pull styles, services, etc
+ * making it more maintainable.
+ * 
+ * You have been warned.
+ */
 import * as React from "react";
 import { Text, View, FlatList, RefreshControl, Image } from "react-native";
 import PouchDB from "pouchdb-react-native";
@@ -5,24 +14,34 @@ import { BookSummary, Book } from "./models";
 import { BookDataModel } from "./dataModels";
 import { getDeviceInfo } from "./deviceInfo";
 
+const baseUrl = "https://raw.githubusercontent.com/rodrigoelp/reactnative-typescript-exercise-15/master/onlineCatalog/";
+const db = new PouchDB<BookDataModel>("cachedBooks"); // this line does the same thing as initialising the database on the previous exercise.
+const deviceInfo = getDeviceInfo();
+
+/** 
+ * Definition of the state used by the AppShell component.
+ */
 interface AppState {
     books: BookSummary[];
     refreshing: boolean;
 }
 
-const baseUrl = "https://raw.githubusercontent.com/rodrigoelp/reactnative-typescript-exercise-15/master/onlineCatalog/";
-const db = new PouchDB<BookDataModel>("cachedBooks"); // this line does the same thing as initialising the database on the previous exercise.
-const deviceInfo = getDeviceInfo();
-
+/** 
+ * Component containing all the behaviour and logic for this application.
+*/
 class AppShell extends React.Component<{}, AppState> {
 
     constructor(props: any) {
         super(props);
 
+        // When the application is lauched, the known state should be empty whilst downloads the remote content for us to use.
         this.state = { books: [], refreshing: false };
     }
 
     componentDidMount() {
+        // Again, I hope this is self explanatory.
+        // Basically, we are chaining the promises as read below to check if we need to download
+        // data and store it in the database or to determine if we call pull it from the local version.
         this.checkIfBooksHaveBeenDownlaoded()
             .then(this.downloadContentIfRequired)
             .then(this.displayContents)
@@ -63,20 +82,22 @@ class AppShell extends React.Component<{}, AppState> {
     }
 
     checkIfBooksHaveBeenDownlaoded = (): Promise<boolean> => {
-        return db.allDocs()
-            .then(res => res.total_rows > 0);
+        // let's check if there's any document stored locally.
+        return db.allDocs().then(res => res.total_rows > 0);
     }
 
-    downloadContentIfRequired = (isPopulated: boolean): Promise<Book[]> => {
+    downloadContentIfRequired = (isPopulated: boolean): Promise<boolean> => {
+        // If there is nothing locally, let's pull it down from the internet and save it locally.
         if (!isPopulated) {
             return fetch(`${baseUrl}index.json`)
                 .then(r => r.json())
-                .then(r => this.persistData(r));
+                .then((r: Book[]) => this.persistData(r));
         }
-        return Promise.resolve(new Array<Book>());
+        // If there is something locally, we don't need to pull it down again. Let's just say we can continue.
+        return Promise.resolve(true);
     }
 
-    persistData = (data: Book[]): Promise<Book[]> => {
+    persistData = (data: Book[]): Promise<boolean> => {
         const dataModels = data.map<BookDataModel>((a, index) => ({
             _id: `${index}`,
             bookId: index,
@@ -88,30 +109,35 @@ class AppShell extends React.Component<{}, AppState> {
             thumbnailUrl: a.attributes.images_thumbnail
         }));
 
+        // I could've use a bulk insertion instead of one by one...
+        // but let's play with this idea first.
         return Promise.all(dataModels.map(a => db.put(a)))
-            .then(responses => {
-                const wasOk = responses.reduce((acc, v) => v.ok && acc, true);
-                if (wasOk) { return data; }
-                else { return [] };
-            });
+            .then(responses => responses.reduce((acc, v) => v.ok && acc, true));
+// when checking the responses, this is going to give us a silent error as we are ignoring any message coming from the responses.
+// for the time being, I will be ignoring this.
     }
 
-    displayContents = (responses: any) => {
-        db.allDocs()
-            .then(content => {
-                return content.rows
-                    .map<BookDataModel>(v => v.doc as BookDataModel)
-                    .map<BookSummary>(v => ({
-                        id: v.bookId,
-                        author: v.author,
-                        banner: `${baseUrl}${v.bannerUrl}`,
-                        name: v.name,
-                        rate: v.rating,
-                        tags: v.tags,
-                        thumbnail: `${baseUrl}${v.thumbnailUrl}`
-                    }));
-            })
-            .then(books => this.setState({ ...this.state, books }));
+    displayContents = (isStoredOk: boolean) => {
+        if (isStoredOk) {
+            db.allDocs()
+                .then(content => {
+                    return content.rows
+                        .map<BookDataModel>(v => v.doc as BookDataModel)
+                        .map<BookSummary>(v => ({
+                            id: v.bookId,
+                            author: v.author,
+                            banner: `${baseUrl}${v.bannerUrl}`, // decided to save the smaller version of the url instead of the whole thing. Not really important.
+                            name: v.name,
+                            rate: v.rating,
+                            tags: v.tags,
+                            thumbnail: `${baseUrl}${v.thumbnailUrl}`
+                        }));
+                })
+                .then(books => this.setState({ ...this.state, books }));
+        }
+        else {
+            console.warn("An unexpected behaviour just happened. Attach your debugger and let's find what is wrong!");
+        }
     }
 
     handleRefresh = () => {
